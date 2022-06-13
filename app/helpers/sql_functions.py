@@ -1,5 +1,6 @@
 def delete_sql_tables(db):
     cursor = db.cursor()
+
     # do not change the order, constraints problem may happen due to foreign key
     cursor.execute('''DROP TABLE IF EXISTS Likes''')
     cursor.execute('''DROP TABLE IF EXISTS Review''')
