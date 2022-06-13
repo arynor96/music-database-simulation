@@ -31,7 +31,7 @@ services:
       environment:
         MONGO_INITDB_DATABASE: imse_m2_mongo
         MONGO_INITDB_USERNAME: user
-        MONGO_INITDB_PASSOWRD: passowrd
+        MONGO_INITDB_PASSWORD: password
       ports:
         - "27017:27017"
 
