@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+    web:
+      container_name: flask
+      build: .
+      restart: always
+      ports:
+        - "5000:5000"
+      volumes:
+        - .:/imse_m2_team27
+
+    db:
+      image: mysql:5.7
+      restart: always
+      container_name: sql
+      environment:
+        MYSQL_DATABASE: imse_m2_db
+        MYSQL_USER: user
+        MYSQL_PASSWORD: password
+        MYSQL_ROOT_PASSWORD: password
+      ports:
+        - "3306:3306"
+      volumes:
+        - db:/var/lib/mysql
+
+    mongodb:
+      image: mongo
+      restart: always
+      container_name: mongodb
+      environment:
+        MONGO_INITDB_DATABASE: imse_m2_mongo
+        MONGO_INITDB_USERNAME: user
+        MONGO_INITDB_PASSOWRD: passowrd
+      ports:
+        - "27017:27017"
+
+volumes:
+  db:
+    driver: local
