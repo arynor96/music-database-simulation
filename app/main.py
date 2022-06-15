@@ -14,11 +14,47 @@ db = mysql.connector.connect(**sql_config)
 mongo_client = pymongo.MongoClient('mongodb://user:password@mongo:27017')
 mongo_db = mongo_client['imse_m2_mongo']
 
-
+cursor = db.cursor()
 @app.route('/')
-def hello_world():
+@app.route('/home')
+def home():
     return render_template("index.html")
 
+@app.route('/albums')
+def albums():
+    cursor.execute("SELECT * FROM Album")
+    results = cursor.fetchall()
+    return render_template("albums.html", data=results)
+
+@app.route('/artists')
+def artists():
+    cursor.execute("SELECT * FROM Artist")
+    results = cursor.fetchall()
+    return render_template("artists.html", data=results)
+
+@app.route('/songs')
+def songs():
+    cursor.execute("SELECT * FROM Song")
+    results = cursor.fetchall()
+    return render_template("songs.html", data=results)
+
+@app.route('/users')
+def users():
+    cursor.execute("SELECT * FROM Users")
+    results = cursor.fetchall()
+    return render_template("users.html", data=results)
+
+@app.route('/follows')
+def follows():
+    cursor.execute("SELECT * FROM Follows")
+    results = cursor.fetchall()
+    return render_template("follows.html", data=results)
+
+@app.route('/reviews')
+def reviews():
+    cursor.execute("SELECT * FROM Review")
+    results = cursor.fetchall()
+    return render_template("reviews.html", data=results)
 
 @app.route('/delete_db')
 def delete_db():
