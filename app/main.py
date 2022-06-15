@@ -2,7 +2,7 @@ import pymongo
 from flask import Flask
 import mysql.connector
 
-from app.helpers.sql_functions import create_sql_tables, delete_sql_tables
+from app.helpers.sql_functions import create_sql_tables, delete_sql_tables, fill_sql_tables
 
 app = Flask(__name__)
 
@@ -26,3 +26,8 @@ def delete_db():
 @app.route('/create_db')
 def create_db():
     if create_sql_tables(db): return 'Database tables created'
+
+
+@app.route ('/fill_db')
+def fill_db():
+    fill_sql_tables(db)
