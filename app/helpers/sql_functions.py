@@ -196,4 +196,4 @@ def fill_sql_tables(db):
     db.commit()
     cursor.close()
 
-    return None
+    return True

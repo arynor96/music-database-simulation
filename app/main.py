@@ -28,6 +28,13 @@ def create_db():
     if create_sql_tables(db): return 'Database tables created'
 
 
-@app.route ('/fill_db')
+@app.route('/fill_db')
 def fill_db():
     fill_sql_tables(db)
+
+
+@app.route('/initialize')
+def initialize_db():
+    delete_sql_tables(db)
+    create_sql_tables(db)
+    if fill_sql_tables(db): return 'Database initialization done'
