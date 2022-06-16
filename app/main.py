@@ -56,6 +56,12 @@ def reviews():
     results = cursor.fetchall()
     return render_template("reviews.html", data=results)
 
+@app.route('/topalbums')
+def topalbums():
+    cursor.execute("SELECT artist_name, album_name, averageRating FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name, Album.album_name, avg(review_rating) As averageRating FROM Review  LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) a WHERE NOT EXISTS (SELECT * FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name,  avg(review_rating) As averageRating FROM Review LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) b WHERE a.artist_id = b.artist_id AND a.averageRating < b.averageRating ) ORDER BY averageRating DESC")
+    results = cursor.fetchall()
+    return render_template("topalbums.html", data=results)
+
 @app.route('/delete_db')
 def delete_db():
     if delete_sql_tables(db): return 'Database is empty now'
