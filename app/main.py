@@ -62,6 +62,12 @@ def topalbums():
     results = cursor.fetchall()
     return render_template("topalbums.html", data=results)
 
+@app.route('/mostreviews')
+def mostreviews():
+    cursor.execute("SELECT Album.album_name, COUNT(Review.album_id) as review_count FROM Album LEFT JOIN Review ON Album.album_id = Review.album_id LEFT JOIN Users ON Review.email = Users.email WHERE YEAR(Users.user_registration_date) = YEAR(NOW()) - 1 GROUP BY Album.album_name ORDER BY review_count DESC")
+    results = cursor.fetchall()
+    return render_template("mostreviews.html", data=results)
+
 @app.route('/delete_db')
 def delete_db():
     if delete_sql_tables(db): return 'Database is empty now'
