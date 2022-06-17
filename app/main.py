@@ -15,10 +15,16 @@ mongo_client = pymongo.MongoClient('mongodb://user:password@mongo:27017')
 mongo_db = mongo_client['imse_m2_mongo']
 
 cursor = db.cursor()
+
+
 @app.route('/')
 @app.route('/home')
 def home():
-    return render_template("index.html")
+    if app.config['DB_STATUS'] == '':
+        return render_template("init.html")
+    else:
+        return render_template("index.html")
+
 
 @app.route('/albums')
 def albums():
@@ -26,11 +32,13 @@ def albums():
     results = cursor.fetchall()
     return render_template("albums.html", data=results)
 
+
 @app.route('/artists')
 def artists():
     cursor.execute("SELECT * FROM Artist")
     results = cursor.fetchall()
     return render_template("artists.html", data=results)
+
 
 @app.route('/songs')
 def songs():
@@ -38,11 +46,13 @@ def songs():
     results = cursor.fetchall()
     return render_template("songs.html", data=results)
 
+
 @app.route('/users')
 def users():
     cursor.execute("SELECT * FROM Users")
     results = cursor.fetchall()
     return render_template("users.html", data=results)
+
 
 @app.route('/follows')
 def follows():
@@ -50,26 +60,33 @@ def follows():
     results = cursor.fetchall()
     return render_template("follows.html", data=results)
 
+
 @app.route('/reviews')
 def reviews():
     cursor.execute("SELECT * FROM Review")
     results = cursor.fetchall()
     return render_template("reviews.html", data=results)
 
+
 @app.route('/topalbums')
 def topalbums():
-    cursor.execute("SELECT artist_name, album_name, averageRating FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name, Album.album_name, avg(review_rating) As averageRating FROM Review  LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) a WHERE NOT EXISTS (SELECT * FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name,  avg(review_rating) As averageRating FROM Review LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) b WHERE a.artist_id = b.artist_id AND a.averageRating < b.averageRating ) ORDER BY averageRating DESC")
+    cursor.execute(
+        "SELECT artist_name, album_name, averageRating FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name, Album.album_name, avg(review_rating) As averageRating FROM Review  LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) a WHERE NOT EXISTS (SELECT * FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name,  avg(review_rating) As averageRating FROM Review LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) b WHERE a.artist_id = b.artist_id AND a.averageRating < b.averageRating ) ORDER BY averageRating DESC")
     results = cursor.fetchall()
     return render_template("topalbums.html", data=results)
 
+
 @app.route('/mostreviews')
 def mostreviews():
-    cursor.execute("SELECT Album.album_name, COUNT(Review.album_id) as review_count FROM Album LEFT JOIN Review ON Album.album_id = Review.album_id LEFT JOIN Users ON Review.email = Users.email WHERE YEAR(Users.user_registration_date) = YEAR(NOW()) - 1 GROUP BY Album.album_name ORDER BY review_count DESC")
+    cursor.execute(
+        "SELECT Album.album_name, COUNT(Review.album_id) as review_count FROM Album LEFT JOIN Review ON Album.album_id = Review.album_id LEFT JOIN Users ON Review.email = Users.email WHERE YEAR(Users.user_registration_date) = YEAR(NOW()) - 1 GROUP BY Album.album_name ORDER BY review_count DESC")
     results = cursor.fetchall()
     return render_template("mostreviews.html", data=results)
 
+
 @app.route('/delete_db')
 def delete_db():
+    app.config['DB_STATUS'] = ''
     if delete_sql_tables(db): return 'Database is empty now'
 
 
@@ -91,14 +108,14 @@ def initialize_db():
         app.config['DB_STATUS'] = 'SQL'
         delete_sql_tables(db)
         create_sql_tables(db)
-        if fill_sql_tables(db): return 'Database initialization done'
+        if fill_sql_tables(db): return render_template("index.html")
     else:
         return redirect('/')
-
 
 
 @app.route('/reset')
 def reset_db():
     delete_sql_tables(db)
     create_sql_tables(db)
-    if fill_sql_tables(db): return 'Database reset done'
+    app.config['DB_STATUS'] = 'SQL'
+    if fill_sql_tables(db): return render_template("index.html")

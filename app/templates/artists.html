@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Artists{% endblock %}
 {% block content %}
-<h1>Artists</h1>
+    <br>
+<h1>Artists</h1><br>
+    <div class="main-content">
 <table>
 	{% for row in data %}
 	<tr>
@@ -11,4 +13,5 @@
 	</tr>
 	{% endfor %}
 </table>
+    </div>
 {% endblock %}
