@@ -1,10 +1,17 @@
 album_id,email,text,review_rating,review_date
 ,adrian@gmail.com,The third song is very bad,3,2022-05-20
 ,adrian@gmail.com,I recommend this one,5,2022-02-21
-,adrian@gmail.com,Very bad,1,2022-06-11
 ,calin@gmail.com,I enjoy it,4,2022-03-03
-,calin@gmail.com,Dont listen to it,1,2022-01-01
 ,calin@gmail.com,My favorite,5,2022-03-14
+,skinty@fia.com,Enjoyable,4,2022-04-03
 ,montes@carlos.com,Recording quality is very good,5,2022-01-01
 ,montes@carlos.com,Recording is very bad,2,2022-02-19
 ,tiannastacey@msn.com,Where is play button,3,2022-06-01
+,player@fakeemail.com,I like it very much,5,2022-04-01
+,jolieprince@gmail.com,Very bad,1,2022-01-04
+,kurt@hello.com,Masterpiece,5,2022-04-05
+,floor@tt.com,Great,5,2022-05-04
+,player@fakeemail.com,I hate it,1,2022-04-01
+,player@fakeemail.com,Meeeeh,2,2022-04-01
+,skinty@fia.com,Why so bad?,1,2022-04-01
+

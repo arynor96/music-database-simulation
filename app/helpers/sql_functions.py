@@ -177,9 +177,44 @@ def fill_sql_tables(db):
     for index, line in document.iterrows():
         cursor.execute(
             "INSERT INTO imse_m2_db.Review (album_id,email,text,review_rating,review_date) VALUES" + " (%d, '%s', '%s',%d,'%s')" %
-            (albumList.pop(), line['email'], line['text'], line['review_rating'], line['review_date']))
+            (albumList.pop(),
+             line['email'], line['text'], line['review_rating'], line['review_date']))
+
+    albumList = list(np.random.choice(np.arange(1, numberOfAlbums), len(document.index), replace=False))
+    random.shuffle(albumList)
+    for index, line in document.iterrows():
+        try : cursor.execute(
+            "INSERT INTO imse_m2_db.Review (album_id,email,text,review_rating,review_date) VALUES" + " (%d, '%s', '%s',%d,'%s')" %
+            (albumList.pop(),
+             line['email'], line['text'], line['review_rating'], line['review_date']))
+        except:
+            print("Skipped, already reviewed", file=sys.stderr)
+
+    albumList = list(np.random.choice(np.arange(1, numberOfAlbums), len(document.index), replace=False))
+    random.shuffle(albumList)
+    for index, line in document.iterrows():
+        try:
+            cursor.execute(
+                "INSERT INTO imse_m2_db.Review (album_id,email,text,review_rating,review_date) VALUES" + " (%d, '%s', '%s',%d,'%s')" %
+                (albumList.pop(),
+                 line['email'], line['text'], line['review_rating'], line['review_date']))
+        except:
+            print("Skipped, already reviewed", file=sys.stderr)
+
+    albumList = list(np.random.choice(np.arange(1, numberOfAlbums), len(document.index), replace=False))
+    random.shuffle(albumList)
+    random.shuffle(albumList)
+    for index, line in document.iterrows():
+        try:
+            cursor.execute(
+                "INSERT INTO imse_m2_db.Review (album_id,email,text,review_rating,review_date) VALUES" + " (%d, '%s', '%s',%d,'%s')" %
+                (albumList.pop(),
+                 line['email'], line['text'], line['review_rating'], line['review_date']))
+        except:
+            print("Skipped, already reviewed", file=sys.stderr)
 
     print("########## Reviews added", file=sys.stderr)
+
 
     # likes
     # will need some fixes for report
