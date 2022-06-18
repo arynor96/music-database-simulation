@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Init Page{% endblock %}
+{% block content %}
+    <br>
+<h3>Add a review to an album</h3><br>
+    {% with messages = get_flashed_messages() %}
+		{% if messages %}
+		     {% for msg in messages %}
+		     	<p>{{msg}}</p>
+		     {% endfor %}
+		{% endif %}
+	{% endwith%}
+<form action="#" method="post">
+	<p>Album name:</p>
+	<p><input type="text" name="album" /></p>
+	<p>Rating:</p>
+	<p><input type="number" name="rating" /></p>
+    <p>Review:</p>
+	<p><input type="text" name="review" /></p>
+	<p><input type="submit" value="Submit" /></p>
+</form>
+{% endblock %}
+
