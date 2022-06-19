@@ -6,6 +6,7 @@ import mysql.connector
 import datetime
 import re
 
+from app.helpers.migration import migrate_database
 from app.helpers.sql_functions import create_sql_tables, delete_sql_tables, fill_sql_tables
 
 app = Flask(__name__)
@@ -15,7 +16,7 @@ app.config['SECRET_KEY'] = 'ERROR'
 sql_config = {'user': 'user', 'password': 'password', 'host': 'sql', 'port': '3306', 'database': 'imse_m2_db'}
 db = mysql.connector.connect(**sql_config)
 
-mongo_client = pymongo.MongoClient('mongodb://user:password@mongo:27017')
+mongo_client = pymongo.MongoClient('mongodb://user:password@mongo:27017/?authSource=admin')
 mongo_db = mongo_client['imse_m2_mongo']
 
 cursor = db.cursor()
@@ -202,7 +203,8 @@ def initialize_db():
         app.config['DB_STATUS'] = 'SQL'
         delete_sql_tables(db)
         create_sql_tables(db)
-        if fill_sql_tables(db): return render_template("index.html")
+        if fill_sql_tables(db):
+            return render_template("index.html")
     else:
         return redirect('/')
 
@@ -218,7 +220,8 @@ def reset_db():
 # if a user has already reviewed an album, the review will be updated and the user will be notified
 @app.route('/review_add', methods=["POST", "GET"])
 def review_add():
-    try: session["user"]
+    try:
+        session["user"]
     except:
         flash("Please login first!")
         return render_template("index.html")
@@ -270,3 +273,10 @@ def review_add():
         flash('Please fill out the form!')
 
     return render_template("review_add.html")
+
+
+@app.route('/migrate')
+def migrate():
+    text = migrate_database(db, mongo_client, mongo_db)
+    print(text, file=sys.stderr)
+    return render_template(print)
