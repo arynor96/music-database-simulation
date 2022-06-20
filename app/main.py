@@ -38,25 +38,44 @@ def login():
     if app.config['DB_STATUS'] == '':
         flash("Please initialize database first!")
         return render_template("init.html")
-
-    if request.method == "POST" and 'email' in request.form and 'pass' in request.form:
-        session.permanent = True
-        user = request.form['email']
-        user_password = request.form['pass']
-        cursor.execute('SELECT * FROM Users WHERE email = %s AND password = %s', (user, user_password,))
-        account = cursor.fetchone()
-        if account:
-            session["user"] = user
-            flash("Login succesful!")
-            return redirect(url_for("home"))
+    if app.config['DB_STATUS'] != 'MONGO':
+        if request.method == "POST" and 'email' in request.form and 'pass' in request.form:
+            session.permanent = True
+            user = request.form['email']
+            user_password = request.form['pass']
+            cursor.execute('SELECT * FROM Users WHERE email = %s AND password = %s', (user, user_password,))
+            account = cursor.fetchone()
+            if account:
+                session["user"] = user
+                flash("Login successful!")
+                return redirect(url_for("home"))
+            else:
+                flash("Incorrect email/password!")
+                return render_template("login.html")
         else:
-            flash("Incorrect email/password!")
+            if "user" in session:
+                flash("Already logged in!")
+                return redirect(url_for("home"))
             return render_template("login.html")
     else:
-        if "user" in session:
-            flash("Already logged in!")
-            return redirect(url_for("home"))
-        return render_template("login.html")
+        if request.method == "POST" and 'email' in request.form and 'pass' in request.form:
+            session.permanent = True
+            user = mongo_db.users.find_one({
+                "email": request.form.get('email'),
+                "password": request.form.get('pass')
+                })
+            if user:
+                session["user"] = user
+                flash("Login successful!")
+                return redirect(url_for("home"))
+            else:
+                flash("Incorrect email/password!")
+                return render_template("login.html")
+        else:
+            if "user" in session:
+                flash("Already logged in!")
+                return redirect(url_for("home"))
+            return render_template("login.html")
 
 
 @app.route("/logout")
@@ -74,30 +93,47 @@ def logout():
 
 @app.route("/register", methods=["POST", "GET"])
 def register():
-    if request.method == 'POST' and 'email' in request.form and 'username' in request.form and 'pass' in request.form:
-        email = request.form['email']
-        username = request.form['username']
-        user_password = request.form['pass']
-        cursor.execute('SELECT * FROM Users WHERE email = %s', (email,))
-        account = cursor.fetchone()
-        if account:
-            flash("Account already exists!")
-        elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
-            flash("Invalid email address!")
-        elif not re.match(r'[A-Za-z0-9]+', username):
-            flash("Username must contain only characters and numbers!")
-        elif not username or not user_password or not email:
-            flash("Please fill out the form!")
-        else:
-            current_date = datetime.date.today()
-            cursor.execute('INSERT INTO Users VALUES (%s, %s, %s, %s)',
-                           (email, username, user_password, current_date.strftime('%Y-%m-%d %H:%M:%S'),))
-            db.commit()
+    if app.config['DB_STATUS'] != 'MONGO':
+        if request.method == 'POST' and 'email' in request.form and 'username' in request.form and 'pass' in request.form:
+            email = request.form['email']
+            username = request.form['username']
+            user_password = request.form['pass']
+            cursor.execute('SELECT * FROM Users WHERE email = %s', (email,))
+            account = cursor.fetchone()
+            if account:
+                flash("Account already exists!")
+            elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+                flash("Invalid email address!")
+            elif not re.match(r'[A-Za-z0-9]+', username):
+                flash("Username must contain only characters and numbers!")
+            elif not username or not user_password or not email:
+                flash("Please fill out the form!")
+            else:
+                current_date = datetime.date.today()
+                cursor.execute('INSERT INTO Users VALUES (%s, %s, %s, %s)',
+                               (email, username, user_password, current_date.strftime('%Y-%m-%d %H:%M:%S'),))
+                db.commit()
+                flash("You have successfully registered!")
+        elif request.method == 'POST':
+            flash('Please fill out the form!')
+        return render_template("register.html")
+    else:
+        if request.method == 'POST' and 'email' in request.form and 'username' in request.form and 'pass' in request.form:
+            user = {
+                    "_id": uuid.uuid4().hex,
+                    "email": request.form.get('email'),
+                    "username": request.form.get('username'),
+                    "password": request.form.get('pass'),
+                    "user_registration_date" : datetime.datetime.now()
+            }
+            if mongo_db.users.find_one({"email": user['email'] }):
+                flash("Account already exists!")
+            mongo_db.users.insert_one(user)
             flash("You have successfully registered!")
-    elif request.method == 'POST':
-        flash('Please fill out the form!')
-    return render_template("register.html")
-
+            return redirect(url_for('home'))
+        elif request.method == 'POST':
+            flash('Please fill out the form!')
+        return render_template("register.html")
 
 @app.route('/albums')
 def albums():
