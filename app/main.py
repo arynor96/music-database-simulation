@@ -11,7 +11,7 @@ from app.helpers.sql_functions import create_sql_tables, delete_sql_tables, fill
 
 app = Flask(__name__)
 app.config['DB_STATUS'] = ''
-app.config['SECRET_KEY'] = 'ERROR'
+app.config['SECRET_KEY'] = 'SECRET'
 
 sql_config = {'user': 'user', 'password': 'password', 'host': 'sql', 'port': '3306', 'database': 'imse_m2_db'}
 db = mysql.connector.connect(**sql_config)
@@ -211,11 +211,16 @@ def initialize_db():
 
 @app.route('/reset')
 def reset_db():
-    delete_sql_tables(db)
-    create_sql_tables(db)
-    app.config['DB_STATUS'] = 'SQL'
-    if fill_sql_tables(db): return render_template("index.html")
+    if not app.config['DB_STATUS']:
+        flash("Noothing to reset, please initialize database first!")
+        return render_template("init.html")
 
+    delete_sql_tables(db)
+    # create_sql_tables(db)
+    mongo_client.drop_database('imse_m2_mongo')
+    app.config['DB_STATUS'] = ''
+    # if fill_sql_tables(db): return render_template("index.html")
+    return home()
 
 # if a user has already reviewed an album, the review will be updated and the user will be notified
 @app.route('/review_add', methods=["POST", "GET"])
@@ -277,6 +282,17 @@ def review_add():
 
 @app.route('/migrate')
 def migrate():
-    text = migrate_database(db, mongo_client, mongo_db)
-    print(text, file=sys.stderr)
-    return render_template(print)
+    if app.config['DB_STATUS'] == '':
+        flash("Please initialize database first!")
+        return render_template("init.html")
+
+    try:
+        migrate_database(db, mongo_client, mongo_db)
+    except:
+        flash('Migration already done')
+        return render_template("index.html")
+
+    app.config['DB_STATUS'] = 'MONGO'
+    flash('Migration to MongoDB done')
+    return render_template("index.html")
+
