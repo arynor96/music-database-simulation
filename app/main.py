@@ -1,10 +1,12 @@
 import sys
+import re
 
 import pymongo
 from flask import Flask, render_template, redirect, session, flash, request, url_for
 import mysql.connector
 import datetime
 import re
+import pandas as pd
 
 from app.helpers.migration import migrate_database
 from app.helpers.sql_functions import create_sql_tables, delete_sql_tables, fill_sql_tables
@@ -261,53 +263,101 @@ def review_add():
         flash("Please login first!")
         return render_template("index.html")
 
-    if request.method == "POST" and 'album' in request.form and 'rating' in request.form and 'review' in request.form:
-        name = request.form['album']
-        if name == '':
-            flash("Please add an album name")
-            return render_template("review_add.html")
-        rating = request.form['rating']
+    if app.config['DB_STATUS'] == 'SQL':
+        if request.method == "POST" and 'album' in request.form and 'rating' in request.form and 'review' in request.form:
+            name = request.form['album']
+            if name == '':
+                flash("Please add an album name")
+                return render_template("review_add.html")
+            rating = request.form['rating']
 
-        if rating == '':
-            flash("Please add a rating")
-            return render_template("review_add.html")
-        else:
-            rating = int(request.form['rating'])
+            if rating == '':
+                flash("Please add a rating")
+                return render_template("review_add.html")
+            else:
+                rating = int(request.form['rating'])
 
-        review = request.form['review']
-        cursor.execute('SELECT album_id FROM Album WHERE album_name LIKE %s', (name,))
-        album = cursor.fetchone()
-        if album is None:
-            flash("Incorrect Album")
-            return render_template("review_add.html")
-        if rating < 1 or rating > 5:
-            flash("Rating must be between 1 and 5")
-            return render_template("review_add.html")
-        if review is None:
-            review = ''
-        for row in album:
-            albumid = row
+            review = request.form['review']
+            cursor.execute('SELECT album_id FROM Album WHERE album_name LIKE %s', (name,))
+            album = cursor.fetchone()
+            if album is None:
+                flash("Incorrect Album")
+                return render_template("review_add.html")
+            if rating < 1 or rating > 5:
+                flash("Rating must be between 1 and 5")
+                return render_template("review_add.html")
+            if review is None:
+                review = ''
+            for row in album:
+                albumid = row
 
-        print(albumid, file=sys.stderr)
-        current_date = datetime.date.today()
-        try:
-            cursor.execute('INSERT INTO Review VALUES (%s, %s, %s, %s, %s)',
-                           (albumid, session["user"], review, rating, current_date.strftime('%Y-%m-%d %H:%M:%S')))
-        except:
-            flash("Review on album updated")
-            email_current = session["user"]
-            cursor.execute('DELETE FROM  Review WHERE album_id = %s and email = %s', (albumid, email_current))
-            cursor.execute('INSERT INTO Review VALUES (%s, %s, %s, %s, %s)',
-                           (albumid, session["user"], review, rating, current_date.strftime('%Y-%m-%d %H:%M:%S')))
+            print(albumid, file=sys.stderr)
+            current_date = datetime.date.today()
+            try:
+                cursor.execute('INSERT INTO Review VALUES (%s, %s, %s, %s, %s)',
+                               (albumid, session["user"], review, rating, current_date.strftime('%Y-%m-%d %H:%M:%S')))
+            except:
+                flash("Review on album updated")
+                email_current = session["user"]
+                cursor.execute('DELETE FROM  Review WHERE album_id = %s and email = %s', (albumid, email_current))
+                cursor.execute('INSERT INTO Review VALUES (%s, %s, %s, %s, %s)',
+                               (albumid, session["user"], review, rating, current_date.strftime('%Y-%m-%d %H:%M:%S')))
+                db.commit()
+                return render_template("review_add.html")
             db.commit()
-            return render_template("review_add.html")
-        db.commit()
-        flash("Review successfully submitted!")
+            flash("Review successfully submitted!")
 
-    elif request.method == 'POST':
-        flash('Please fill out the form!')
+        elif request.method == 'POST':
+            flash('Please fill out the form!')
 
-    return render_template("review_add.html")
+        return render_template("review_add.html")
+    else:
+        if request.method == "POST" and 'album' in request.form and 'rating' in request.form and 'review' in request.form:
+            name = request.form['album']
+            if name == '':
+                flash("Please add an album name")
+                return render_template("review_add.html")
+            rating = request.form['rating']
+
+            if rating == '':
+                flash("Please add a rating")
+                return render_template("review_add.html")
+            else:
+                rating = int(request.form['rating'])
+
+            review = request.form['review']
+
+            # collectionAlbums = mongo_db['albums']
+            # print(collectionAlbums.findOne({"artist_name": name}),file=sys.stderr)
+
+            album = mongo_db['albums'].find_one({'album_name': re.compile('^' + name + '$', re.IGNORECASE)})
+
+            try:
+                album_name = album.get('album_name')
+                album_id = album.get('album_id')
+                #flash(album_name + " found!")
+            except:
+                flash("Album not found! Please note that this is case sentivie!")
+                return render_template("review_add.html")
+
+            current_time = datetime.date.today()
+            mydict = {"album_id": album_id,
+                      "email": session["user"],
+                      "text": review,
+                      "review_rating": rating,
+                      "review_date": pd.to_datetime(current_time)}
+
+            try:
+
+                x = mongo_db['review'].insert_one(mydict)
+            except:
+                filter = {"album_id": album_id,
+                          "email": session["user"]}
+                newValues = {"$set": {"text": review}}
+                mongo_db['review'].update_one(filter,newValues)
+                flash("Review updated!")
+
+        return render_template("review_add.html")
 
 
 @app.route('/migrate')
@@ -317,7 +367,7 @@ def migrate():
         return render_template("init.html")
 
     try:
-        migrate_database(db, mongo_client, mongo_db)
+        # migrate_database(db, mongo_client, mongo_db)
         reset_db()
         initialize_db()
         migrate_database(db, mongo_client, mongo_db)
