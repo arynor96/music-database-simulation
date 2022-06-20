@@ -58,4 +58,4 @@ def migrate_database(db, mongo_client, mongo_db):
     col.create_index([('email', pymongo.ASCENDING)])
     col.insert_many(dataFrame_review.to_dict('records'))
 
-    return None
+    #return None

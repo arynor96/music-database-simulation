@@ -9,13 +9,16 @@ def delete_sql_tables(db):
     cursor = db.cursor()
 
     # do not change the order, constraints problem may happen due to foreign key
-    cursor.execute('''DROP TABLE IF EXISTS Follows''')
-    cursor.execute('''DROP TABLE IF EXISTS Likes''')
-    cursor.execute('''DROP TABLE IF EXISTS Review''')
-    cursor.execute('''DROP TABLE IF EXISTS Song''')
-    cursor.execute('''DROP TABLE IF EXISTS Album''')
-    cursor.execute('''DROP TABLE IF EXISTS Artist''')
-    cursor.execute('''DROP TABLE IF EXISTS Users''')
+
+    cursor.execute("DROP TABLE IF EXISTS Follows")
+    cursor.execute("DROP TABLE IF EXISTS Likes")
+    cursor.execute("DROP TABLE IF EXISTS Review")
+    cursor.execute("DROP TABLE IF EXISTS Song")
+    cursor.execute("DROP TABLE IF EXISTS Album")
+    cursor.execute("DROP TABLE IF EXISTS Artist")
+    cursor.execute("DROP TABLE IF EXISTS Users")
+
+    db.commit()
     cursor.close()
     return True
 

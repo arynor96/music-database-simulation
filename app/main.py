@@ -103,6 +103,13 @@ def albums():
         flash("Please initialize database first!")
         return render_template("init.html")
 
+    if app.config['DB_STATUS'] == 'MONGO':
+        collection = mongo_db['albums']
+        results = []
+        for document in collection.find({}, {"_id": 0}):
+            results.append(document.values())
+        return render_template("albums.html", data=results, mongoyes="MongoDB results")
+
     cursor.execute("SELECT * FROM Album")
     results = cursor.fetchall()
     return render_template("albums.html", data=results)
@@ -114,9 +121,16 @@ def artists():
         flash("Please initialize database first!")
         return render_template("init.html")
 
-    cursor.execute("SELECT * FROM Artist")
-    results = cursor.fetchall()
-    return render_template("artists.html", data=results)
+    if app.config['DB_STATUS'] == 'MONGO':
+        collection = mongo_db['artists']
+        results = []
+        for document in collection.find({}, {"_id": 0}):
+            results.append(document.values())
+        return render_template("artists.html", data=results, mongoyes="MongoDB results")
+    else:
+        cursor.execute("SELECT * FROM Artist")
+        results = cursor.fetchall()
+        return render_template("artists.html", data=results)
 
 
 @app.route('/songs')
@@ -124,6 +138,13 @@ def songs():
     if app.config['DB_STATUS'] == '':
         flash("Please initialize database first!")
         return render_template("init.html")
+
+    if app.config['DB_STATUS'] == 'MONGO':
+        collection = mongo_db['songs']
+        results = []
+        for document in collection.find({}, {"_id": 0}):
+            results.append(document.values())
+        return render_template("songs.html", data=results, mongoyes="MongoDB results")
 
     cursor.execute("SELECT * FROM Song")
     results = cursor.fetchall()
@@ -149,6 +170,13 @@ def reviews():
     if app.config['DB_STATUS'] == '':
         flash("Please initialize database first!")
         return render_template("init.html")
+
+    if app.config['DB_STATUS'] == 'MONGO':
+        collection = mongo_db['review']
+        results = []
+        for document in collection.find({}, {"_id": 0}):
+            results.append(document.values())
+        return render_template("reviews.html", data=results, mongoyes="MongoDB results")
 
     cursor.execute("SELECT * FROM Review")
     results = cursor.fetchall()
@@ -182,7 +210,8 @@ def mostreviews():
 @app.route('/delete_db')
 def delete_db():
     app.config['DB_STATUS'] = ''
-    if delete_sql_tables(db): return 'Database is empty now'
+    delete_sql_tables(db)
+    # if delete_sql_tables(db): return 'Database is empty now'
 
 
 @app.route('/create_db')
@@ -215,12 +244,13 @@ def reset_db():
         flash("Noothing to reset, please initialize database first!")
         return render_template("init.html")
 
-    delete_sql_tables(db)
     # create_sql_tables(db)
     mongo_client.drop_database('imse_m2_mongo')
+    delete_db()
     app.config['DB_STATUS'] = ''
     # if fill_sql_tables(db): return render_template("index.html")
     return home()
+
 
 # if a user has already reviewed an album, the review will be updated and the user will be notified
 @app.route('/review_add', methods=["POST", "GET"])
@@ -288,11 +318,16 @@ def migrate():
 
     try:
         migrate_database(db, mongo_client, mongo_db)
+        reset_db()
+        initialize_db()
+        migrate_database(db, mongo_client, mongo_db)
+
     except:
         flash('Migration already done')
         return render_template("index.html")
 
+    delete_sql_tables(db)
     app.config['DB_STATUS'] = 'MONGO'
+
     flash('Migration to MongoDB done')
     return render_template("index.html")
-
