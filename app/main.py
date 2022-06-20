@@ -335,9 +335,9 @@ def review_add():
             try:
                 album_name = album.get('album_name')
                 album_id = album.get('album_id')
-                #flash(album_name + " found!")
+                # flash(album_name + " found!")
             except:
-                flash("Album not found! Please note that this is case sentivie!")
+                flash("Album not found!")
                 return render_template("review_add.html")
 
             current_time = datetime.date.today()
@@ -348,13 +348,14 @@ def review_add():
                       "review_date": pd.to_datetime(current_time)}
 
             try:
-
                 x = mongo_db['review'].insert_one(mydict)
+                flash("Review Added!")
             except:
                 filter = {"album_id": album_id,
                           "email": session["user"]}
-                newValues = {"$set": {"text": review}}
-                mongo_db['review'].update_one(filter,newValues)
+                newValues = {"$set": {"text": review},
+                             "review_date": pd.to_datetime(current_time)}
+                mongo_db['review'].update_one(filter, newValues)
                 flash("Review updated!")
 
         return render_template("review_add.html")
