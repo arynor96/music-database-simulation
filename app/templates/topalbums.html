@@ -2,11 +2,11 @@
 {% block title %}Each artist’s top-rated album{% endblock %}
 {% block content %}
     <br>
-<h1>Each artist’s top-rated album</h1><br>
+<h1>Each artist’s top-rated album {{ mongoyes }}</h1><br>
     <div class="main-content">
 <table>
-    <th>Artist Name</th>
     <th>Album Name</th>
+    <th>Artist Name</th>
     <th>Average Rating</th>
 	{% for row in data %}
 	<tr>

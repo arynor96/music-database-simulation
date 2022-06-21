@@ -2,7 +2,9 @@ import sys
 import re
 import uuid
 
+import numpy
 import pymongo
+import werkzeug.routing
 from flask import Flask, render_template, redirect, session, flash, request, url_for
 import mysql.connector
 import datetime
@@ -232,28 +234,52 @@ def topalbums():
 
     if app.config['DB_STATUS'] == 'SQL':
         cursor.execute(
-            "SELECT artist_name, album_name, averageRating FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name, Album.album_name, avg(review_rating) As averageRating FROM Review  LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) a WHERE NOT EXISTS (SELECT * FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name,  avg(review_rating) As averageRating FROM Review LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) b WHERE a.artist_id = b.artist_id AND a.averageRating < b.averageRating ) ORDER BY averageRating DESC")
+            "SELECT album_name, artist_name, averageRating FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name, Album.album_name, avg(review_rating) As averageRating FROM Review  LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) a WHERE NOT EXISTS (SELECT * FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name,  avg(review_rating) As averageRating FROM Review LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) b WHERE a.artist_id = b.artist_id AND a.averageRating < b.averageRating ) ORDER BY averageRating DESC")
         results = cursor.fetchall()
         return render_template("topalbums.html", data=results)
     else:
         pipeline = [
             {
                 '$lookup': {
-                    'from': 'album',
-                    'localField': '_id',
-                    'foreignField': 'album.artist_id',
-                    'as': 'albums_with_reviews'
+                    'from': 'review',
+                    'localField': 'album_id',
+                    'foreignField': 'album_id',
+                    'as': 'reviews_new'
                 }
             },
 
+            {'$unwind': "$reviews_new"},
+            {
+                '$lookup': {
+                    'from': 'artists',
+                    'localField': 'artist_id',
+                    'foreignField': 'artist_id',
+                    'as': 'artist_id2'
+                }
+            },
+            {'$unwind': "$artist_id2"},
+
+            {
+                '$project': {
+                    "_id": 0,
+                    "album_name": 1,
+                    "artist_name": '$artist_id2.artist_name',
+                    "review_rating": '$reviews_new.review_rating'
+
+                }
+            }
+
         ]
 
-        df = pd.DataFrame(list(mongo_db['reviews'].aggregate(pipeline))).rename(columns={'_id': 'id'})
-        results = []
-        for document in df:
-            results.append(document)
+        df = pd.DataFrame(list(mongo_db['albums'].aggregate(pipeline))).rename(columns={'_id': 'id'})
 
-        return render_template("topalbums.html", data=results)
+        cols = ['album_name', 'artist_name']
+        df2 = df.groupby(cols)['review_rating'].mean().reset_index()
+        df2 = df2.sort_values(by='review_rating',ascending=False)
+        df2 = df2.drop_duplicates(subset=['artist_name'], keep = "first")
+
+        results = df2.values
+        return render_template("topalbums.html", data=results, mongoyes="MongoDB results")
 
 
 @app.route('/mostreviews')

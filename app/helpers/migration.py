@@ -38,14 +38,14 @@ def migrate_database(db, mongo_client, mongo_db):
 
     dataFrame_follows = pd.read_sql_query(sql='SELECT * FROM Follows', con=db)
     col = mongo_db['follows']
-    col.create_index([('email_current', pymongo.ASCENDING),('followed_by', pymongo.ASCENDING)], unique=True)
+    col.create_index([('email_current', pymongo.ASCENDING), ('followed_by', pymongo.ASCENDING)], unique=True)
     col.create_index([('email_current', pymongo.ASCENDING)])
     col.create_index([('followed_by', pymongo.ASCENDING)])
     col.insert_many(dataFrame_follows.to_dict('records'))
 
     dataFrame_likes = pd.read_sql_query(sql='SELECT * FROM Likes', con=db)
     col = mongo_db['likes']
-    col.create_index([('song_id', pymongo.ASCENDING),('email', pymongo.ASCENDING)], unique=True)
+    col.create_index([('song_id', pymongo.ASCENDING), ('email', pymongo.ASCENDING)], unique=True)
     col.create_index([('song_id', pymongo.ASCENDING)])
     col.create_index([('email', pymongo.ASCENDING)])
     col.insert_many(dataFrame_likes.to_dict('records'))
@@ -53,9 +53,13 @@ def migrate_database(db, mongo_client, mongo_db):
     dataFrame_review = pd.read_sql_query(sql='SELECT * FROM Review', con=db)
     dataFrame_review['review_date'] = pd.to_datetime(dataFrame_review['review_date'])
     col = mongo_db['review']
-    col.create_index([('album_id', pymongo.ASCENDING),('email', pymongo.ASCENDING)], unique=True)
+    col.create_index([('album_id', pymongo.ASCENDING), ('email', pymongo.ASCENDING)], unique=True)
     col.create_index([('album_id', pymongo.ASCENDING)])
     col.create_index([('email', pymongo.ASCENDING)])
     col.insert_many(dataFrame_review.to_dict('records'))
 
-    #return None
+    #numberOfAlbums = mongo_db['albums'].count_documents({})
+
+    #mongo_db.review.update_many({"newfiled": {"$exists": False}}, {"$set": {"new_field": {numberOfAlbums}}})
+
+    # return None
