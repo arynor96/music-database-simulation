@@ -5,6 +5,11 @@
 <h1>Reviews {{ mongoyes }}</h1><br>
     <div class="main-content">
 <table>
+    <th>Album ID</th>
+    <th>User Email</th>
+    <th>Album Name</th>
+    <th>Review Rating</th>
+    <th>Review Date</th>
 	{% for row in data %}
 	<tr>
 		{% for item in row %}

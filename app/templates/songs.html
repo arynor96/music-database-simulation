@@ -5,6 +5,11 @@
 <h1>Songs {{ mongoyes }}</h1><br>
     <div class="main-content">
 <table>
+    <th>Song ID</th>
+    <th>Song Name</th>
+    <th>Song Length</th>
+    <th>Song Release Date</th>
+    <th>Song Album ID</th>
 	{% for row in data %}
 	<tr>
 		{% for item in row %}

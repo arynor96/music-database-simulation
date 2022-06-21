@@ -5,8 +5,12 @@
 <h1>Artists {{ mongoyes }}</h1><br>
     <div class="main-content">
 <table>
+    <th>Artist ID</th>
+    <th>Artist Name</th>
+    <th>Artist Genre</th>
 	{% for row in data %}
 	<tr>
+
 		{% for item in row %}
 			<td>{{ item }}</td>
 		{% endfor %}

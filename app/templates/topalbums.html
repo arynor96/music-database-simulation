@@ -5,6 +5,9 @@
 <h1>Each artist’s top-rated album</h1><br>
     <div class="main-content">
 <table>
+    <th>Artist Name</th>
+    <th>Album Name</th>
+    <th>Average Rating</th>
 	{% for row in data %}
 	<tr>
 		{% for item in row %}

@@ -1,5 +1,6 @@
 import sys
 import re
+import uuid
 
 import pymongo
 from flask import Flask, render_template, redirect, session, flash, request, url_for
@@ -227,10 +228,26 @@ def topalbums():
         flash("Please initialize database first!")
         return render_template("init.html")
 
-    cursor.execute(
-        "SELECT artist_name, album_name, averageRating FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name, Album.album_name, avg(review_rating) As averageRating FROM Review  LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) a WHERE NOT EXISTS (SELECT * FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name,  avg(review_rating) As averageRating FROM Review LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) b WHERE a.artist_id = b.artist_id AND a.averageRating < b.averageRating ) ORDER BY averageRating DESC")
-    results = cursor.fetchall()
-    return render_template("topalbums.html", data=results)
+    if app.config['DB_STATUS'] == 'SQL':
+        cursor.execute(
+            "SELECT artist_name, album_name, averageRating FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name, Album.album_name, avg(review_rating) As averageRating FROM Review  LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) a WHERE NOT EXISTS (SELECT * FROM (SELECT Review.album_id, Artist.artist_id, Artist.artist_name,  avg(review_rating) As averageRating FROM Review LEFT JOIN Album ON Album.album_id = Review.album_id LEFT JOIN Artist ON Artist.artist_id = Album.artist_id GROUP BY Artist.artist_id, Review.album_id) b WHERE a.artist_id = b.artist_id AND a.averageRating < b.averageRating ) ORDER BY averageRating DESC")
+        results = cursor.fetchall()
+        return render_template("topalbums.html", data=results)
+    else:
+        topAlbums = mongo_db.get_collection('Review').aggregate([
+            {"$lookup": {
+                "from": "Album",
+                "localField": "album_id",
+                "foreignField": "album_id",
+                "as": "Album"
+            }},
+            {"$match": {"Album:0": {"$exists": False}}}
+        ])
+        results = []
+        for document in topAlbums:
+            results.append(document.values())
+
+        return render_template("topalbums.html",data=results)
 
 
 @app.route('/mostreviews')
@@ -403,15 +420,15 @@ def migrate():
         flash("Please initialize database first!")
         return render_template("init.html")
 
-    try:
-        # migrate_database(db, mongo_client, mongo_db)
-        reset_db()
-        initialize_db()
-        migrate_database(db, mongo_client, mongo_db)
+    if app.config['DB_STATUS'] == 'SQL':
+            # migrate_database(db, mongo_client, mongo_db)
+            reset_db()
+            initialize_db()
+            migrate_database(db, mongo_client, mongo_db)
 
-    except:
-        flash('Migration already done')
-        return render_template("index.html")
+    else:
+            flash('Migration already done')
+            return render_template("index.html")
 
     delete_sql_tables(db)
     app.config['DB_STATUS'] = 'MONGO'
