@@ -8,6 +8,7 @@ import mysql.connector
 import datetime
 import re
 import pandas as pd
+import uuid
 
 from app.helpers.migration import migrate_database
 from app.helpers.sql_functions import create_sql_tables, delete_sql_tables, fill_sql_tables
