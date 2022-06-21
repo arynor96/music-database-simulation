@@ -65,7 +65,7 @@ def login():
             user = mongo_db.users.find_one({
                 "email": request.form.get('email'),
                 "password": request.form.get('pass')
-                })
+            })
             if user:
                 session["user"] = user
                 flash("Login successful!")
@@ -122,13 +122,13 @@ def register():
     else:
         if request.method == 'POST' and 'email' in request.form and 'username' in request.form and 'pass' in request.form:
             user = {
-                    "_id": uuid.uuid4().hex,
-                    "email": request.form.get('email'),
-                    "username": request.form.get('username'),
-                    "password": request.form.get('pass'),
-                    "user_registration_date" : datetime.datetime.now()
+                "_id": uuid.uuid4().hex,
+                "email": request.form.get('email'),
+                "username": request.form.get('username'),
+                "password": request.form.get('pass'),
+                "user_registration_date": datetime.datetime.now()
             }
-            if mongo_db.users.find_one({"email": user['email'] }):
+            if mongo_db.users.find_one({"email": user['email']}):
                 flash("Account already exists!")
             mongo_db.users.insert_one(user)
             flash("You have successfully registered!")
@@ -136,6 +136,7 @@ def register():
         elif request.method == 'POST':
             flash('Please fill out the form!')
         return render_template("register.html")
+
 
 @app.route('/albums')
 def albums():
@@ -235,20 +236,24 @@ def topalbums():
         results = cursor.fetchall()
         return render_template("topalbums.html", data=results)
     else:
-        topAlbums = mongo_db.get_collection('Review').aggregate([
-            {"$lookup": {
-                "from": "Album",
-                "localField": "album_id",
-                "foreignField": "album_id",
-                "as": "Album"
-            }},
-            {"$match": {"Album:0": {"$exists": False}}}
-        ])
-        results = []
-        for document in topAlbums:
-            results.append(document.values())
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'album',
+                    'localField': '_id',
+                    'foreignField': 'album.artist_id',
+                    'as': 'albums_with_reviews'
+                }
+            },
 
-        return render_template("topalbums.html",data=results)
+        ]
+
+        df = pd.DataFrame(list(mongo_db['reviews'].aggregate(pipeline))).rename(columns={'_id': 'id'})
+        results = []
+        for document in df:
+            results.append(document)
+
+        return render_template("topalbums.html", data=results)
 
 
 @app.route('/mostreviews')
@@ -402,15 +407,19 @@ def review_add():
                       "review_date": pd.to_datetime(current_time)}
 
             try:
-                x = mongo_db['review'].insert_one(mydict)
+                mongo_db['review'].insert_one(mydict)
                 flash("Review Added!")
             except:
-                filter = {"album_id": album_id,
-                          "email": session["user"]}
-                newValues = {"$set": {"text": review},
-                             "review_date": pd.to_datetime(current_time)}
-                mongo_db['review'].update_one(filter, newValues)
+                mongo_db['review'].delete_one({'album_id': album_id,
+                                               'email': session["user"]})
+                mongo_db['review'].insert_one(mydict)
                 flash("Review updated!")
+                # filter2 = {"album_id": album_id,
+                #          "email": session["user"]}
+                # newValues = {"$set": {"text": review},
+                #             "review_date": pd.to_datetime(current_time)}
+                # mongo_db['review'].update_one(filter2, newValues)
+                # flash("Review updated!")
 
         return render_template("review_add.html")
 
@@ -422,14 +431,15 @@ def migrate():
         return render_template("init.html")
 
     if app.config['DB_STATUS'] == 'SQL':
-            # migrate_database(db, mongo_client, mongo_db)
-            reset_db()
-            initialize_db()
-            migrate_database(db, mongo_client, mongo_db)
+        # migrate_database(db, mongo_client, mongo_db)
+        mongo_client.drop_database('imse_m2_mongo')
+        # reset_db()
+        # initialize_db()
+        migrate_database(db, mongo_client, mongo_db)
 
     else:
-            flash('Migration already done')
-            return render_template("index.html")
+        flash('Migration already done')
+        return render_template("index.html")
 
     delete_sql_tables(db)
     app.config['DB_STATUS'] = 'MONGO'
