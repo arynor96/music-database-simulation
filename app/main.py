@@ -271,7 +271,7 @@ def topalbums():
 
         ]
 
-        df = pd.DataFrame(list(mongo_db['albums'].aggregate(pipeline))).rename(columns={'_id': 'id'})
+        df = pd.DataFrame(list(mongo_db['albums'].aggregate(pipeline)))
 
         cols = ['album_name', 'artist_name']
         df2 = df.groupby(cols)['review_rating'].mean().reset_index()
