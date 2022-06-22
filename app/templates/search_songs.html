@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Init Page{% endblock %}
+{% block content %}
+    <br>
+<h3>Search a song</h3><br>
+    {% with messages = get_flashed_messages() %}
+		{% if messages %}
+		     {% for msg in messages %}
+		     	<p>{{msg}}</p>
+		     {% endfor %}
+		{% endif %}
+	{% endwith%}
+<form action="#" method="post">
+	<p>Song name:</p>
+	<p><input type="text" name="song" /></p>
+	<p><input type="submit" value="Submit" /></p>
+</form>
+{% endblock %}
+

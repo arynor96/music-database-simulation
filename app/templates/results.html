@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Songs{% endblock %}
+{% block content %}
+    <br>
+<h1>Song {{ mongoyes }}</h1><br>
+    <div class="main-content">
+<table>
+    <th>Song ID</th>
+    <th>Song Name</th>
+    <th>Song Length</th>
+    <th>Song Release Date</th>
+    <th>Song Album ID</th>
+	<tr>
+		{% for item in data %}
+      {% for row in item %}
+			<td>{{ row }}</td>
+      {% endfor %}
+		{% endfor %}
+	</tr>
+</table>
+    </div>
+{% endblock %}
