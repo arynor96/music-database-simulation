@@ -5,7 +5,7 @@ import uuid
 import numpy
 import pymongo
 import werkzeug.routing
-from flask import Flask, render_template, redirect, session, flash, request, url_for
+from flask import Flask, render_template, redirect, session, flash, request, url_for, jsonify
 import mysql.connector
 import datetime
 import re
@@ -192,6 +192,45 @@ def songs():
     cursor.execute("SELECT * FROM Song")
     results = cursor.fetchall()
     return render_template("songs.html", data=results)
+
+@app.route('/search_song',methods=['POST','GET'])
+def search_song():
+    if app.config['DB_STATUS'] == '':
+        flash("Please initialize database first!")
+        return render_template("init.html")
+
+    if app.config['DB_STATUS'] == 'SQL':
+        flash("This has not been implemented for SQL. Please migrate to MongoDB!")
+        return render_template("index.html")
+    else:
+        if request.method == "POST" and 'song' in request.form:
+            songname = request.form['song']
+            if songname == '':
+                flash("Please add a song name")
+                return render_template("search_songs.html")
+
+            song = mongo_db['songs'].find_one({'song_title': re.compile('^' + songname + '$', re.IGNORECASE)})
+
+            try:
+                song_title = song.get('song_title')
+                song_id = song.get('song_id')
+                song_length = song.get('song_length')
+                song_release_date = song.get('song_release_date')
+                album_id = song.get('album_id')
+            except:
+                flash("Song not found!")
+                return render_template("search_songs.html")
+
+            lst = [song_id,song_title,song_length,song_release_date,album_id]
+            df = pd.DataFrame(list(lst))
+
+            results = df.values
+     
+            return render_template("results.html", data=results, mongoyes="Search results")
+
+    return render_template("search_songs.html")
+
+
 
 
 @app.route('/users')
