@@ -4,7 +4,6 @@ import uuid
 
 import numpy
 import pymongo
-import werkzeug.routing
 from flask import Flask, render_template, redirect, session, flash, request, url_for, jsonify
 import mysql.connector
 import datetime
@@ -347,7 +346,7 @@ def addToFavs():
                   "email": session["user"]
                   }
         try:
-            mongo_db['likes'].insert_one(mydict)
+            mongo_db.likes.insert_one(mydict)
             flash("Song added to favorites!")
             return render_template("index.html")
         except:
