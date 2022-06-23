@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Songs{% endblock %}
+{% block title %}Search Result{% endblock %}
 {% block content %}
     <br>
 <h1>Song {{ mongoyes }}</h1><br>
@@ -18,5 +18,8 @@
 		{% endfor %}
 	</tr>
 </table>
+    </div><br><br>
+    <div class="main-content">
+        <a href ="/addtofavs" class="button-18" role ="button" aria-pressed="true">Add to favorites</a>
     </div>
 {% endblock %}

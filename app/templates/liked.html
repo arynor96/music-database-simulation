@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Liked songs{% endblock %}
+{% block content %}
+    <br>
+<h1>Likes {{ mongoyes }}</h1><br>
+    <div class="main-content">
+<table>
+    <th>Song Name</th>
+    <th>Song Length</th>
+    <th>Song Release Date</th>
+	{% for row in data %}
+	<tr>
+		{% for item in row %}
+			<td>{{ item }}</td>
+		{% endfor %}
+	</tr>
+	{% endfor %}
+</table>
+    </div>
+{% endblock %}

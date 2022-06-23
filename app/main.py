@@ -27,6 +27,9 @@ mongo_db = mongo_client['imse_m2_mongo']
 
 cursor = db.cursor()
 
+##### var
+song_id = None
+
 
 @app.route('/')
 @app.route('/home')
@@ -193,15 +196,100 @@ def songs():
     results = cursor.fetchall()
     return render_template("songs.html", data=results)
 
-@app.route('/search_song',methods=['POST','GET'])
+
+@app.route('/liked')
+def likes():
+    if app.config['DB_STATUS'] == '':
+        flash("Please initialize database first!")
+        return render_template("init.html")
+    try:
+        session["user"]
+    except:
+        flash("Please login first!")
+        return render_template("index.html")
+
+    if app.config['DB_STATUS'] == 'MONGO':
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'songs',
+                    'localField': 'song_id',
+                    'foreignField': 'song_id',
+                    'as': 'songs_new'
+                }
+            },
+
+            {'$unwind': "$songs_new"},
+
+            {
+                '$lookup': {
+                    'from': 'users',
+                    'localField': 'email',
+                    'foreignField': 'email',
+                    'as': 'users_new'
+                }
+            },
+
+            {'$unwind': "$users_new"},
+
+            {
+                '$project': {
+                    "_id": 0,
+                    "song_id": 1,
+                    "song_name": '$songs_new.song_title',
+                    "song_release_date": '$songs_new.song_release_date',
+                    "user_email": '$users_new.email',
+
+                }
+            }
+
+        ]
+
+        # this sorts the data so that only the liked songs by the current user are displayed
+        df = pd.DataFrame(list(mongo_db['likes'].aggregate(pipeline)))
+        # filter = df["user_email"] == session["user"]
+        df = df[df.user_email == session["user"]]
+        df = df.drop('user_email', 1)
+        results = df.values
+        return render_template("liked.html", data=results, mongoyes="MongoDB results")
+
+    cursor.execute(
+        'SELECT song_title, song_length, song_release_date  FROM Likes LEFT JOIN Song ON Likes.song_id = Song.song_id WHERE email = %s',
+        (session["user"],))
+    results = cursor.fetchall()
+    return render_template("liked.html", data=results)
+
+
+@app.route('/search_song', methods=['POST', 'GET'])
 def search_song():
     if app.config['DB_STATUS'] == '':
         flash("Please initialize database first!")
         return render_template("init.html")
 
     if app.config['DB_STATUS'] == 'SQL':
-        flash("This has not been implemented for SQL. Please migrate to MongoDB!")
-        return render_template("index.html")
+        if request.method == "POST" and 'song' in request.form:
+            songname = request.form['song']
+            if songname == '':
+                flash("Please add a song name")
+                return render_template("search_songs.html")
+            # flash("This has not been implemented for SQL. Please migrate to MongoDB!")
+            cursor.execute("SELECT * FROM Song WHERE song_title LIKE %s", (songname,))
+            results = cursor.fetchall()
+            cursor.execute("SELECT song_id FROM Song WHERE song_title LIKE %s", (songname,))
+
+            global song_id
+            row = cursor.fetchone()
+
+            try:
+                data = row[0]
+            except:
+                flash("Song not found!")
+                return render_template("search_songs.html")
+
+            song_id = int(data)
+            print(song_id, file=sys.stderr)
+
+            return render_template("results.html", data=results, mongoyes="Search results")
     else:
         if request.method == "POST" and 'song' in request.form:
             songname = request.form['song']
@@ -221,16 +309,14 @@ def search_song():
                 flash("Song not found!")
                 return render_template("search_songs.html")
 
-            lst = [song_id,song_title,song_length,song_release_date,album_id]
+            lst = [song_id, song_title, song_length, song_release_date, album_id]
             df = pd.DataFrame(list(lst))
 
             results = df.values
-     
+
             return render_template("results.html", data=results, mongoyes="Search results")
 
     return render_template("search_songs.html")
-
-
 
 
 @app.route('/users')
@@ -245,6 +331,38 @@ def follows():
     cursor.execute("SELECT * FROM Follows")
     results = cursor.fetchall()
     return render_template("follows.html", data=results)
+
+
+@app.route('/addtofavs')
+def addToFavs():
+    if app.config['DB_STATUS'] == '':
+        flash("Please initialize database first!")
+        return render_template("init.html")
+    if song_id == None:
+        flash("Song not found, can't be added to favorites!")
+        return render_template("index.html")
+
+    if app.config['DB_STATUS'] == 'MONGO':
+        mydict = {"song_id": song_id,
+                  "email": session["user"]
+                  }
+        try:
+            mongo_db['likes'].insert_one(mydict)
+            flash("Song added to favorites!")
+            return render_template("index.html")
+        except:
+            flash("You already like this song!")
+            return render_template("index.html")
+
+    try:
+        cursor.execute('INSERT INTO Likes VALUES (%s, %s)',
+                       (song_id, session["user"]))
+    except:
+        flash("You already like this song!")
+        return render_template("index.html")
+
+    flash("Song added to favorites!")
+    return render_template("index.html")
 
 
 @app.route('/reviews')
@@ -314,8 +432,8 @@ def topalbums():
 
         cols = ['album_name', 'artist_name']
         df2 = df.groupby(cols)['review_rating'].mean().reset_index()
-        df2 = df2.sort_values(by='review_rating',ascending=False)
-        df2 = df2.drop_duplicates(subset=['artist_name'], keep = "first")
+        df2 = df2.sort_values(by='review_rating', ascending=False)
+        df2 = df2.drop_duplicates(subset=['artist_name'], keep="first")
 
         results = df2.values
         return render_template("topalbums.html", data=results, mongoyes="MongoDB results")
@@ -351,7 +469,6 @@ def fill_db():
 
 
 # if database is already initialized then it will return to home page
-# TODO: when we have a proper website -> a proper redirect and warning message
 @app.route('/initialize')
 def initialize_db():
     if not app.config['DB_STATUS']:
