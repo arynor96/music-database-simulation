@@ -5,8 +5,8 @@ services:
       container_name: flask
       build: .
       restart: always
-      ports:
-        - "5000:5000"
+      expose:
+        - 5000
       volumes:
         - .:/imse_m2_team27
 
@@ -19,8 +19,8 @@ services:
         MYSQL_USER: user
         MYSQL_PASSWORD: password
         MYSQL_ROOT_PASSWORD: password
-      ports:
-        - "3306:3306"
+      expose:
+        - 3306
       volumes:
         - db:/var/lib/mysql
 
@@ -32,8 +32,19 @@ services:
         MONGO_INITDB_ROOT_USERNAME: user
         MONGO_INITDB_ROOT_PASSWORD: password
         MONGO_INITDB_DATABASE: imse_m2_mongo
+      expose:
+        - 27017
+
+    nginx:
+      image: nginx:latest
+      container_name: nginx
+      restart: always
       ports:
-        - "27017:27017"
+        - "5000:8000"
+        - "443:443"
+      volumes:
+        - ./nginx/certs:/etc/nginx/certs
+        - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
 
 volumes:
   db:
