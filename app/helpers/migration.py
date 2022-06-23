@@ -1,3 +1,4 @@
+import json
 import sys
 import pandas as pd
 
@@ -7,8 +8,9 @@ import pandas as pd
 
 import pymongo
 
-
 # all collections should have an index, good for searching
+from bson import json_util, ObjectId
+
 
 def migrate_database(db, mongo_client, mongo_db):
     dataFrame_artist = pd.read_sql_query(sql='SELECT * FROM Artist', con=db)
@@ -28,6 +30,8 @@ def migrate_database(db, mongo_client, mongo_db):
     col = mongo_db['users']
     col.create_index([('email', pymongo.ASCENDING)], unique=True)
     col.insert_many(dataFrame_users.to_dict('records'))
+
+
 
     dataFrame_songs = pd.read_sql_query(sql='SELECT * FROM Song', con=db)
     dataFrame_songs['song_release_date'] = pd.to_datetime(dataFrame_songs['song_release_date'])
@@ -58,8 +62,8 @@ def migrate_database(db, mongo_client, mongo_db):
     col.create_index([('email', pymongo.ASCENDING)])
     col.insert_many(dataFrame_review.to_dict('records'))
 
-    #numberOfAlbums = mongo_db['albums'].count_documents({})
+    # numberOfAlbums = mongo_db['albums'].count_documents({})
 
-    #mongo_db.review.update_many({"newfiled": {"$exists": False}}, {"$set": {"new_field": {numberOfAlbums}}})
+    # mongo_db.review.update_many({"newfiled": {"$exists": False}}, {"$set": {"new_field": {numberOfAlbums}}})
 
     # return None

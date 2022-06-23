@@ -71,7 +71,7 @@ def login():
                 "password": request.form.get('pass')
             })
             if user:
-                session["user"] = user
+                session["user"] = request.form.get('email')
                 flash("Login successful!")
                 return redirect(url_for("home"))
             else:
