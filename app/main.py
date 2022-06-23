@@ -444,11 +444,57 @@ def mostreviews():
     if app.config['DB_STATUS'] == '':
         flash("Please initialize database first!")
         return render_template("init.html")
+    if app.config['DB_STATUS'] == 'SQL':
+        cursor.execute(
+            "SELECT Album.album_name, COUNT(Review.album_id) as review_count FROM Album LEFT JOIN Review ON Album.album_id = Review.album_id LEFT JOIN Users ON Review.email = Users.email WHERE YEAR(Users.user_registration_date) = YEAR(NOW()) - 1 GROUP BY Album.album_name ORDER BY review_count DESC")
+        results = cursor.fetchall()
+        return render_template("mostreviews.html", data=results)
+    else:
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'review', 
+                    'localField': 'album_id', 
+                    'foreignField': 'album_id', 
+                    'as': 'reviews_new'
+                }
+            }, {
+                '$unwind': '$reviews_new'
+            }, {
+                '$lookup': {
+                    'from': 'users', 
+                    'localField': 'reviews_new.email', 
+                    'foreignField': 'email', 
+                    'as': 'users_new'
+                }
+            }, {
+                '$unwind': '$users_new'
+            }, {
+                '$match': {
+                    'users_new.user_registration_date': {
+                        '$gte': datetime.datetime(2021, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc), 
+                        '$lte': datetime.datetime(2021, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc)
+                    }
+                }
+            }, {
+                '$group': {
+                    '_id': {
+                        'album_name': '$album_name'
+                    }, 
+                    'review_count': {
+                        '$sum': 1
+                    }
+                }
+            }, {
+                '$sort': {
+                    'review_count': -1
+                }
+            }
+        ]
+        df = pd.DataFrame(list(mongo_db['albums'].aggregate(pipeline)))
+        results = df.values
+        return render_template("mostreviews.html", data=results, mongoyes="MongoDB results")
 
-    cursor.execute(
-        "SELECT Album.album_name, COUNT(Review.album_id) as review_count FROM Album LEFT JOIN Review ON Album.album_id = Review.album_id LEFT JOIN Users ON Review.email = Users.email WHERE YEAR(Users.user_registration_date) = YEAR(NOW()) - 1 GROUP BY Album.album_name ORDER BY review_count DESC")
-    results = cursor.fetchall()
-    return render_template("mostreviews.html", data=results)
 
 
 @app.route('/delete_db')
