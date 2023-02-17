@@ -1,4 +1,4 @@
-# Solving	Heat	Equation	in	2D
+# Streaming Platform Database Simulation
 
 
 ### Short description
@@ -25,6 +25,10 @@ More information about the project can be found inside the pdf files from the ro
 
 
 ### Entity–relationship model
+
+<p align="middle">
+  <img src="https://github.com/arynor96/ise-ms2/blob/main/images-git/er-model.png?raw=true"/>
+</p>
 
 ### What it can do
 
